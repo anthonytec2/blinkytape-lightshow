@@ -21,7 +21,7 @@ BlinkyTape Python communication library.
   over serial communication is impossible.
 """
 import serial
-
+import datetime
 # For Python3 support- always run strings through a bytes converter
 import sys
 if sys.version_info < (3,):
@@ -62,6 +62,14 @@ class BlinkyTape(object):
         self.buf = ""
         self.serial = serial.Serial(port, 115200)
         self.show()  # Flush any incomplete data
+        self.override = False
+        self.timeoutval = datetime.datetime.now()
+        self.displayColor(0, 0, 0)
+
+    def set_override(self, val, timeout=30):
+        self.override = val
+        if val:
+            self.timeoutval = datetime.datetime.now() + datetime.timedelta(minutes=timeout)
 
     def send_list(self, colors):
         if len(colors) > self.ledCount:
@@ -90,8 +98,15 @@ class BlinkyTape(object):
 
         Values are clamped to 0-254 automatically.
 
+        Added in timer for shutting fof lights
+
         Throws a RuntimeException if [ledCount] pixels are already set.
         """
+        if self.timeoutval < datetime.datetime.now():
+            self.set_override(False)
+
+        if not(datetime.datetime.now().hour < 23 and datetime.datetime.now().hour > 15 or self.override) and not r == 0 and not g == 0 and b == 0:
+            return
         data = ""
         data = chr(r) + chr(g) + chr(b)
         data = data.replace(chr(255), chr(254))
@@ -133,9 +148,20 @@ class BlinkyTape(object):
 
     def displayColor(self, r, g, b):
         """Fills [ledCount] pixels with RGB color and shows it."""
-        for i in range(0, self.ledCount):
-            self.sendPixel(r, g, b)
-        self.show()
+        if self.timeoutval < datetime.datetime.now():
+            self.set_override(False)
+
+        if datetime.datetime.now().hour < 23 and datetime.datetime.now().hour > 15 or self.override:
+            for i in range(0, self.ledCount):
+                self.sendPixel(r, g, b)
+            self.show()
+            return 1
+
+        else:
+            for i in range(0, self.ledCount):
+                self.sendPixel(0, 0, 0)
+            self.show()
+            return -1
 
     def resetToBootloader(self):
         """Initiates a reset on BlinkyTape.

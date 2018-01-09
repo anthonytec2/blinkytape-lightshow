@@ -40,15 +40,51 @@ def find_usb_dev():
         return -1
 
 
-def set_static_color(col, bt):
+def set_static_color(bt, col):
     """[sets a static color on the led strip]
 
     Arguments:
         col {[type]} -- [color from RGB class]
         bt {[BlinkyTape]} -- [light controller object]
     """
-    bt.displayColor(col.red, col.green, col.blue)
-    logging.debug("Set Color to (%s,%s,%s)" % (col.red, col.green, col.blue))
+    ret = bt.displayColor(col.red, col.green, col.blue)
+    if ret == 1:
+        logging.debug("Set Color to (%s,%s,%s)" %
+                      (col.red, col.green, col.blue))
+    else:
+        logging.debug("Shutting off lights, off hours")
+
+
+def color_fade(bt, col1, col2, duration=100):
+    set_static_color(bt, col1)
+    delta = [col2.red - col1.red, col2.green -
+             col1.green, col2.blue - col1.blue]
+
+    RGB = namedtuple('RGB', 'red, green, blue')
+    red = col1.red
+    green = col1.green
+    blue = col1.blue
+    wait_time = 100 / max(delta)
+    for i in range(0, max(delta)):
+        if delta[0] > 0:
+            red += 1
+            delta[0] += 1
+        elif delta[0] < 0:
+            red -= 1
+            delta[0] -= 1
+        if delta[1] > 0:
+            green += 1
+            delta[1] += 1
+        elif delta[1] < 0:
+            green -= 1
+            delta[1] -= 1
+        if delta[2] > 0:
+            blue += 1
+            delta[2] += 1
+        elif delta[2] < 0:
+            blue -= 1
+            delta[2] -= 1
+        set_static_color(bt, RGB(red, green, blue))
 
 
 def gpu_color(bt):
@@ -66,8 +102,8 @@ def gpu_color(bt):
     gpu_temp = int(re.search("\d\dC",
                              std_out.decode("utf8")).group().split("C")[0])
     RGB = namedtuple('RGB', 'red, green, blue')
-    set_static_color(RGB(math.floor(1.04 * gpu_temp),
-                         math.floor(100 - 1.04 * gpu_temp), 0), bt)
+    set_static_color(bt, RGB(int(math.floor(1.04 * gpu_temp)),
+                             int(math.floor(100 - 1.04 * gpu_temp)), 0))
 
 
 def main():
@@ -79,6 +115,7 @@ def main():
     logging.debug('Begining to Run Program')
     usb_devices = find_usb_dev()
     bt = BlinkyTape('/dev/' + usb_devices.split('\n')[0])
+    color_fade(bt, RGB.BLUE, RGB.LIGHTGOLDENRODYELLOW, 5)
 
 
 if __name__ == '__main__':

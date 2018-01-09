@@ -14,14 +14,24 @@ from collections import namedtuple, OrderedDict
 
 
 def find_usb_dev():
-    """[Function to find all USB devices on system ]
+    """[Function to return usb device on system ]
 
     Returns:
         [string] -- [returns list of USB devices]
     """
     if platform.system() == 'Windows':
         logging.info('Platform: Windows')
-        return 'Work in Progress'
+        process = Popen("mode",
+                        shell=True, stdout=PIPE, stderr=PIPE)
+        std_out, std_err = process.communicate()
+        usb_dev = re.search("COM\d",
+                            std_out.decode("utf8")).group()
+        logging.debug(std_err)
+        if not std_out:
+            logging.debug("No USB Devices")
+            sys.exit(-1)
+        logging.debug(usb_dev)
+        return usb_dev
     elif platform.system() == 'Linux':
         logging.info('Platform: Linux')
         process = Popen("ls /dev/ | grep -E '(ttyACM*|ttyUSB*)'",
@@ -33,7 +43,8 @@ def find_usb_dev():
             logging.debug("No USB Devices")
             sys.exit(-1)
         logging.debug(std_out)
-        return std_out
+
+        return '/dev/' + std_out.split('\n')[0]
     else:
         logging.debug('Platform: Unknown exiting')
         sys.exit(-1)
@@ -61,10 +72,13 @@ def gpu_color(bt):
         process = Popen("nvidia-smi",
                         shell=True, stdout=PIPE, stderr=PIPE)
     elif platform.system() == "Windows":
+        process = Popen("C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe",
+                        shell=True, stdout=PIPE, stderr=PIPE)
         logging.debug("Working on Windows Support")
     std_out, std_err = process.communicate()
     gpu_temp = int(re.search("\d\dC",
                              std_out.decode("utf8")).group().split("C")[0])
+    logging.info('GPU TEMP: ' + str(gpu_temp) + "C")
     RGB = namedtuple('RGB', 'red, green, blue')
     set_static_color(RGB(math.floor(1.04 * gpu_temp),
                          math.floor(100 - 1.04 * gpu_temp), 0), bt)
@@ -78,7 +92,7 @@ def main():
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.debug('Begining to Run Program')
     usb_devices = find_usb_dev()
-    bt = BlinkyTape('/dev/' + usb_devices.split('\n')[0])
+    bt = BlinkyTape(usb_devices)
 
 
 if __name__ == '__main__':

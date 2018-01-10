@@ -172,6 +172,21 @@ def game_running():
     else:
         return False
 
+def travel_up(bt, col1,col2, block_size=0, exp=False, time_delay=0.1):
+    set_static_color(bt, col1)
+    for i in range(0,bt.get_led_count()):
+        for j in range(0, bt.get_led_count()):
+            if i <= j <= i+block_size:
+                bt.sendPixel(col2.red,col2.green,col2.blue)
+            else:
+                bt.sendPixel(col1.red,col1.green,col1.blue)
+        bt.show()
+        if exp:
+            time_delay=time_delay/1.1
+            time.sleep(time_delay)
+        else:
+            time.sleep(time_delay)
+
 
 def main():
     """[Main function to run custom light program]
@@ -182,7 +197,7 @@ def main():
     logging.debug('Begining to Run Program')
     usb_devices = find_usb_dev()
     bt = BlinkyTape(usb_devices)
-    color_phase(bt, 100, 10)
+    travel_up(bt, RGB.AQUA, RGB.PINK, block_size=3, exp=True, time_delay=3)
 
 
 if __name__ == '__main__':

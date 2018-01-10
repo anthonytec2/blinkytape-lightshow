@@ -6,11 +6,14 @@ import sys
 import logging
 import re
 import math
+import time
+import numpy as np
 from time import sleep
 from subprocess import Popen, PIPE
 from BlinkyTape import BlinkyTape
 from color_constants import RGB
 from collections import namedtuple, OrderedDict
+import colorsys
 
 
 def find_usb_dev():
@@ -66,6 +69,24 @@ def set_static_color(bt, col):
         logging.debug("Shutting off lights, off hours")
 
 
+def two_color_swap(bt, col1, col2, freq=10, duration=10):
+    for a in range(0, freq * duration):
+        for i in range(0, bt.get_led_count()):
+            if i % 2 == 0:
+                bt.sendPixel(col1.red, col1.green, col1.blue)
+            else:
+                bt.sendPixel(col2.red, col2.green, col2.blue)
+        bt.show()
+        time.sleep(1 / freq)
+        for i in range(0, bt.get_led_count()):
+            if i % 2 == 1:
+                bt.sendPixel(col1.red, col1.green, col1.blue)
+            else:
+                bt.sendPixel(col2.red, col2.green, col2.blue)
+        bt.show()
+        time.sleep(1 / freq)
+
+
 def color_fade(bt, col1, col2, duration=100):
     set_static_color(bt, col1)
     delta = [col2.red - col1.red, col2.green -
@@ -75,7 +96,7 @@ def color_fade(bt, col1, col2, duration=100):
     red = col1.red
     green = col1.green
     blue = col1.blue
-    wait_time = 100 / max(delta)
+    wait_time = duration / max(delta)
     for i in range(0, max(delta)):
         if delta[0] > 0:
             red += 1
@@ -96,6 +117,20 @@ def color_fade(bt, col1, col2, duration=100):
             blue -= 1
             delta[2] -= 1
         set_static_color(bt, RGB(red, green, blue))
+        sleep(wait_time)
+
+
+def color_phase(bt, freq=10, duration=10):
+    colors = np.linspace(0, 360, bt.get_led_count())
+    for a in range(0, duration * freq):
+        for i in range(0, bt.get_led_count()):
+            color_vals = colorsys.hsv_to_rgb(colors[i] / 360, 0.9, 0.9)
+            bt.sendPixel(
+                int(255 * color_vals[0]), int(255 * color_vals[1]), int(255 * color_vals[2]))
+        bt.show()
+        colors = colors + 5
+        colors[colors > 360] = colors[colors > 360] - 360
+        time.sleep(1 / freq)
 
 
 def gpu_color(bt):
@@ -121,19 +156,22 @@ def gpu_color(bt):
     set_static_color(bt, RGB(int(math.floor(1.04 * gpu_temp)),
                              int(math.floor(100 - 1.04 * gpu_temp)), 0))
 
+
 def game_running():
     if platform.system() == 'Windows':
         process = Popen("tasklist",
                         shell=True, stdout=PIPE, stderr=PIPE)
         std_out, std_err = process.communicate()
-        games = ['TslGame.exe','starwarsbattlefrontii.exe','FortniteClient-Win64-Ship', 'RocketLeague.exe', 'Shogun2.exe']
-        std_out=std_out.decode('utf8')
+        games = ['TslGame.exe', 'starwarsbattlefrontii.exe',
+                 'FortniteClient-Win64-Ship', 'RocketLeague.exe', 'Shogun2.exe']
+        std_out = std_out.decode('utf8')
         if any(game in std_out for game in games):
             return True
     elif platform.system() == 'Linux':
         return False
     else:
         return False
+
 
 def main():
     """[Main function to run custom light program]
@@ -144,6 +182,7 @@ def main():
     logging.debug('Begining to Run Program')
     usb_devices = find_usb_dev()
     bt = BlinkyTape(usb_devices)
+    color_phase(bt, 100, 10)
 
 
 if __name__ == '__main__':

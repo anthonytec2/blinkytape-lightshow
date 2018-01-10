@@ -66,6 +66,9 @@ class BlinkyTape(object):
         self.timeoutval = datetime.datetime.now()
         self.displayColor(0, 0, 0)
 
+    def get_led_count(self):
+        return self.ledCount
+
     def set_override(self, val, timeout=30):
         self.override = val
         if val:

@@ -110,7 +110,9 @@ def gpu_color(bt):
     elif platform.system() == "Windows":
         process = Popen("C:\\Program Files\\NVIDIA Corporation\\NVSMI\\nvidia-smi.exe",
                         shell=True, stdout=PIPE, stderr=PIPE)
-        logging.debug("Working on Windows Support")
+    else:
+        return
+        logging.debug("Unknown OS")
     std_out, std_err = process.communicate()
     gpu_temp = int(re.search("\d\dC",
                              std_out.decode("utf8")).group().split("C")[0])
@@ -119,6 +121,19 @@ def gpu_color(bt):
     set_static_color(bt, RGB(int(math.floor(1.04 * gpu_temp)),
                              int(math.floor(100 - 1.04 * gpu_temp)), 0))
 
+def game_running():
+    if platform.system() == 'Windows':
+        process = Popen("tasklist",
+                        shell=True, stdout=PIPE, stderr=PIPE)
+        std_out, std_err = process.communicate()
+        games = ['TslGame.exe','starwarsbattlefrontii.exe','FortniteClient-Win64-Ship', 'RocketLeague.exe', 'Shogun2.exe']
+        std_out=std_out.decode('utf8')
+        if any(game in std_out for game in games):
+            return True
+    elif platform.system() == 'Linux':
+        return False
+    else:
+        return False
 
 def main():
     """[Main function to run custom light program]
@@ -128,12 +143,7 @@ def main():
     logging.getLogger().addHandler(logging.StreamHandler())
     logging.debug('Begining to Run Program')
     usb_devices = find_usb_dev()
-<<<<<<< HEAD
-    bt = BlinkyTape('/dev/' + usb_devices.split('\n')[0])
-    color_fade(bt, RGB.BLUE, RGB.LIGHTGOLDENRODYELLOW, 5)
-=======
     bt = BlinkyTape(usb_devices)
->>>>>>> fe5c47ecfcb9ea7c7eecb29d15397b791436c038
 
 
 if __name__ == '__main__':

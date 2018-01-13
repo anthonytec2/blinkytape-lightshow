@@ -7,6 +7,7 @@ import logging
 import re
 import math
 import time
+import random
 import numpy as np
 from time import sleep
 from subprocess import Popen, PIPE
@@ -172,20 +173,71 @@ def game_running():
     else:
         return False
 
-def travel_up(bt, col1,col2, block_size=0, exp=False, time_delay=0.1):
+
+def multi_color_parition(bt, collist):
+    num_colors = len(collist)
+    num_led_per_color = int(bt.get_led_count() / num_colors)
+    for color in collist:
+        for j in range(0, num_led_per_color):
+            bt.sendPixel(color.red, color.green, color.blue)
+    bt.show()
+
+
+def travel_up(bt, col1, col2, block_size=0, exp=False, time_delay=0.1):
     set_static_color(bt, col1)
-    for i in range(0,bt.get_led_count()):
+    for i in range(0, bt.get_led_count()):
         for j in range(0, bt.get_led_count()):
-            if i <= j <= i+block_size:
-                bt.sendPixel(col2.red,col2.green,col2.blue)
+            if i <= j <= i + block_size:
+                bt.sendPixel(col2.red, col2.green, col2.blue)
             else:
-                bt.sendPixel(col1.red,col1.green,col1.blue)
+                bt.sendPixel(col1.red, col1.green, col1.blue)
         bt.show()
         if exp:
-            time_delay=time_delay/1.1
+            time_delay = time_delay / 1.1
             time.sleep(time_delay)
         else:
             time.sleep(time_delay)
+
+
+def driver(bt):
+
+    if game_running():
+        gpu_color(bt)
+    else:
+        # 6 different states for random vars for things to do
+        state = random.randint(0, 5) 
+        col1 = RGB.colors[list(RGB.colors.keys())[random.randint(0, 305)]]
+        col2 = RGB.colors[list(RGB.colors.keys())[random.randint(0, 305)]]
+        while math.sqrt(pow(col2.red-col1.red,2)+pow(col2.green-col1.green,2)+pow(col2.blue-col2.blue,2)) < 80:
+            col2 = RGB.colors[list(RGB.colors.keys())[random.randint(0, 305)]]
+        print(col1)
+        print(col2)
+        try:
+            if state == 0:
+                logging.debug('0')
+                set_static_color(bt, col)
+                time.sleep(60)
+            elif state == 1:
+                logging.debug('1')
+                two_color_swap(bt, col1, col2, freq=random.choice([2, 3, 5]), duration=10)
+            elif state == 2:
+                logging.debug('2')
+                color_fade(bt, col1, col2, duration=100)
+            elif state == 3:
+                logging.debug('3')
+                color_phase(bt, freq=random.choice([5, 10, 15, 20, 35, 50, 66, 80, 90, 100, 120, 150, 170, 200, 250, 400, 500]), duration=100)
+            elif state == 4:
+                logging.debug('4')
+                multi_color_parition(bt, [col1, col2])
+                time.sleep(60)
+            elif state == 5:
+                logging.debug('5')
+                for i in range(0, 10):
+                    travel_up(bt, col1, col2, block_size=random.randint(0, 5), exp=random.choice(
+                        [True, False]), time_delay=random.uniform(0.5, 2))
+        except:
+            logging.debug('State error from ' + str(state))
+            print("Unexpected error:" + str(sys.exc_info()[0]))
 
 
 def main():
@@ -197,7 +249,8 @@ def main():
     logging.debug('Begining to Run Program')
     usb_devices = find_usb_dev()
     bt = BlinkyTape(usb_devices)
-    travel_up(bt, RGB.AQUA, RGB.PINK, block_size=3, exp=True, time_delay=3)
+    while True:
+        driver(bt)
 
 
 if __name__ == '__main__':

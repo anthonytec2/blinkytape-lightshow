@@ -97,6 +97,13 @@ class BlinkyTape(object):
         self.show()
 
     def sendPixel(self, r, g, b):
+        if r > 255:
+            r = 255
+        if g > 255:
+            g = 255
+        if b > 255:
+            b = 255
+
         """Sends the next pixel data triplet in RGB format.
 
         Values are clamped to 0-254 automatically.

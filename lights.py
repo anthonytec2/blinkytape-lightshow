@@ -9,7 +9,6 @@ import math
 import time
 import random
 import numpy as np
-from time import sleep
 from subprocess import Popen, PIPE
 from BlinkyTape import BlinkyTape
 from color_constants import RGB
@@ -71,6 +70,15 @@ def set_static_color(bt, col):
 
 
 def two_color_swap(bt, col1, col2, freq=10, duration=10):
+    """[makes the colors swap back and forth next to each other]
+
+    Arguments:
+        col1 {[RGB]} -- [color from RGB class]
+        col2 {[RGB]} -- [color from RGB class]
+        freq {[float]} -- [number of times per second transition occurs]
+        duration {[int]} -- [length effect occurs]
+        bt {[BlinkyTape]} -- [light controller object]
+    """
     for a in range(0, freq * duration):
         for i in range(0, bt.get_led_count()):
             if i % 2 == 0:
@@ -89,6 +97,14 @@ def two_color_swap(bt, col1, col2, freq=10, duration=10):
 
 
 def color_fade(bt, col1, col2, duration=100):
+    """[makes the color transition from col1 to col2 over duration]
+
+    Arguments:
+        col1 {[RGB]} -- [color from RGB class]
+        col2 {[RGB]} -- [color from RGB class]
+        duration {[int]} -- [length effect occurs]
+        bt {[BlinkyTape]} -- [light controller object]
+    """
     set_static_color(bt, col1)
     delta = [col2.red - col1.red, col2.green -
              col1.green, col2.blue - col1.blue]
@@ -118,10 +134,17 @@ def color_fade(bt, col1, col2, duration=100):
             blue -= 1
             delta[2] -= 1
         set_static_color(bt, RGB(red, green, blue))
-        sleep(wait_time)
+        time.sleep(wait_time)
 
 
 def color_phase(bt, freq=10, duration=10):
+    """[makes a rainbow effect]
+
+    Arguments:
+        freq {[float]} -- [number of times per second transition occurs]
+        duration {[int]} -- [length effect occurs]
+        bt {[BlinkyTape]} -- [light controller object]
+    """
     colors = np.linspace(0, 360, bt.get_led_count())
     for a in range(0, duration * freq):
         for i in range(0, bt.get_led_count()):
@@ -159,6 +182,8 @@ def gpu_color(bt):
 
 
 def game_running():
+    """[checks to see if a game is running, return bool]
+    """
     if platform.system() == 'Windows':
         process = Popen("tasklist",
                         shell=True, stdout=PIPE, stderr=PIPE)
@@ -175,6 +200,12 @@ def game_running():
 
 
 def multi_color_parition(bt, collist):
+    """[bunch of color to cut up led strip]
+
+    Arguments:
+        collist {[RGB]} -- [color list from RGB class]
+        bt {[BlinkyTape]} -- [light controller object]
+    """
     num_colors = len(collist)
     num_led_per_color = int(bt.get_led_count() / num_colors)
     for color in collist:
@@ -184,6 +215,16 @@ def multi_color_parition(bt, collist):
 
 
 def travel_up(bt, col1, col2, block_size=0, exp=False, time_delay=0.1):
+     """[makes a block of leds that move along strip]
+
+    Arguments:
+        col1 {[RGB]} -- [color from RGB class]
+        col2 {[RGB]} -- [color from RGB class]
+        block_size {[int]} -- [number of leds in a block]
+        exp {[bool]} -- [uses exponent delay model for block movement]
+        time_delay {[float]} -- [delay in bettween each block movement]
+        bt {[BlinkyTape]} -- [light controller object]
+    """
     set_static_color(bt, col1)
     for i in range(0, bt.get_led_count()):
         for j in range(0, bt.get_led_count()):
@@ -200,7 +241,11 @@ def travel_up(bt, col1, col2, block_size=0, exp=False, time_delay=0.1):
 
 
 def driver(bt):
+    """[driver used to control different effects]
 
+    Arguments:
+        bt {[BlinkyTape]} -- [light controller object]
+    """
     if game_running():
         gpu_color(bt)
     else:
